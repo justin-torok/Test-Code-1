@@ -1,0 +1,237 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 28 16:14:32 2015
+
+@author: justin
+"""
+#%%
+import numpy as np
+import scipy as sp
+import pylab
+import math
+#%%
+#Problem 1a
+def psi_x(x):
+    psi = math.exp(-2.0*(x-math.pi)**2)
+    return psi
+def dpsidx(x):
+    derivative = -4.0*(x-math.pi)*math.exp(-2.0*(x-math.pi)**2)
+    return derivative
+def psi0_x(delta_x,xi,xf):
+    n_xpoints = int(1+(xf-xi)/delta_x)
+    xpoints = np.linspace(xi,xf,n_xpoints)
+    psilist = []
+    psi0 = psi_x(xpoints[0])
+    psilist.append(psi0)
+    i=1
+    while i<n_xpoints:
+        psii = psilist[i-1]+delta_x*dpsidx(xpoints[i])
+        psilist.append(psii)
+        i=i+1
+    return np.array(psilist)
+def psi_xt_approx(delta_x,delta_t,xi=0,xf=2*math.pi,ti=0,tf=1):
+    psi0_vector = psi0_x(delta_x,xi,xf)
+    n_xpoints = int(1+(xf-xi)/delta_x)
+    n_tpoints = int(1+(tf-ti)/delta_t)
+    solutions = np.zeros((n_tpoints,n_xpoints))
+    solutions[0,1:] = psi0_vector[1:]
+    for i in range(1,n_tpoints):
+        for j in range(1,n_xpoints):
+            solutions[i,j]=solutions[i-1,j]-(delta_t/delta_x)*(solutions[i-1,j]-solutions[i-1,j-1])
+    return solutions
+def psi_x_exact(x,t=1):
+    psi = np.zeros(np.size(x))
+    for i in range(np.size(x)):    
+        psi[i] = math.exp(-2.0*(x[i]-math.pi-t)**2)
+    return psi
+#%%
+arange = np.linspace(0,2*math.pi,101)
+psi_true = psi_x_exact(arange)
+C1 = 0.25/math.pi
+C2 = 0.01/math.pi
+delx1 = 0.1*math.pi
+delx2 = 0.01*3.1416 #issue with FP algebra necessitates the use of this approximation
+delt1 = 0.025
+delt2 = 0.001
+delt3 = 0.0025
+delt4 = 0.0001
+x1range = np.linspace(0,2*math.pi,21)
+x2range = np.linspace(0,2*math.pi,201)
+#%%
+PDE1 = psi_xt_approx(delx1,delt1)[-1,:]
+trueplot, = pylab.plot(arange,psi_true, 'b-', label='Exact')
+PDEplot1, = pylab.plot(x1range,PDE1, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot1])
+pylab.xlabel('x')
+pylab.title('dx = 0.1*pi, dt = 0.025')
+pylab.show()
+#%%
+PDE2 = psi_xt_approx(delx1,delt2)[-1,:]
+trueplot, = pylab.plot(arange,psi_true, 'b-', label='Exact')
+PDEplot2, = pylab.plot(x1range,PDE2, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot2])
+pylab.xlabel('x')
+pylab.title('dx = 0.1*pi, dt = 0.001')
+pylab.show()
+#%%
+PDE3 = psi_xt_approx(delx2,delt3,xf=6.2832)[-1,:] #See Line 53
+trueplot, = pylab.plot(arange,psi_true, 'b-', label='Exact')
+PDEplot3, = pylab.plot(x2range,PDE3, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot3])
+pylab.xlabel('x')
+pylab.title('dx = 0.01*pi, dt = 0.0025')
+pylab.show()
+#%%
+PDE4 = psi_xt_approx(delx2,delt4,xf=6.2832)[-1,:] #See Line 53
+trueplot, = pylab.plot(arange,psi_true, 'b-', label='Exact')
+PDEplot4, = pylab.plot(x2range,PDE4, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot4])
+pylab.xlabel('x')
+pylab.title('dx = 0.01*pi, dt = 0.0001')
+pylab.show()
+#%%
+psi_true1 = psi_x_exact(x1range)
+psi_true2 = psi_x_exact(x2range)
+error1 = pylab.plot(x1range,abs(PDE1-psi_true1))
+pylab.title('Error 1')
+#%%
+error2 = pylab.plot(x1range,abs(PDE2-psi_true1))
+pylab.title('Error 2')
+#%%
+error3 = pylab.plot(x2range,abs(PDE3-psi_true2))
+pylab.title('Error 3')
+#%%
+error4 = pylab.plot(x2range,abs(PDE4-psi_true2))
+pylab.title('Error 4')
+#%%
+#Problem 1b
+def psi_t(t):
+    psi = math.exp(-2.0*(6-t-math.pi)**2)
+    return psi
+def dpsidt(t):
+    derivative = 4.0*(6-t-math.pi)*math.exp(-2.0*(6-t-math.pi)**2)
+    return derivative
+def psi0_t(delta_t,ti,tf):
+    n_tpoints = int(1+(tf-ti)/delta_t)
+    tpoints = np.linspace(ti,tf,n_tpoints)
+    psilist = []
+    psi0 = psi_t(tpoints[0])
+    psilist.append(psi0)
+    i=1
+    while i<n_tpoints:
+        psii = psilist[i-1]+delta_t*dpsidt(tpoints[i-1])
+        psilist.append(psii)
+        i=i+1
+    return np.array(psilist)
+def psi_tx_approx(delta_x,delta_t,xi=0,xf=2*math.pi,ti=0,tf=6):
+    psi0_vector = psi0_t(delta_t,ti,tf)
+    n_xpoints = int(1+(xf-xi)/delta_x)
+    n_tpoints = int(1+(tf-ti)/delta_t)
+    solutions = np.zeros((n_tpoints,n_xpoints))
+    solutions[1:,0] = psi0_vector[1:]
+    for j in range(1,n_xpoints):
+        for i in range(1,n_tpoints):
+            solutions[i,j]=solutions[i-1,j]-(delta_t/delta_x)*(solutions[i-1,j]-solutions[i-1,j-1])
+    return solutions
+def psi_x_exactb(x,t=6):
+    psi = np.zeros(np.size(x))
+    for i in range(np.size(x)):    
+        psi[i] = math.exp(-2.0*(x[i]-math.pi-t+6)**2)
+    return psi
+psi_trueb = psi_x_exactb(x2range)
+#%%
+PDE1b = psi_tx_approx(delx1,delt1)[-1,:]
+trueplot, = pylab.plot(x2range,psi_trueb, 'b-', label='Exact')
+PDEplot1b, = pylab.plot(x1range,PDE1b, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot1b])
+pylab.xlabel('x')
+pylab.title('dx = 0.1*pi, dt = 0.025')
+pylab.show()
+#%%
+PDE2b = psi_tx_approx(delx1,delt2)[-1,:]
+trueplot, = pylab.plot(x2range,psi_trueb, 'b-', label='Exact')
+PDEplot2b, = pylab.plot(x1range,PDE2b, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot2b])
+pylab.xlabel('x')
+pylab.title('dx = 0.1*pi, dt = 0.001')
+pylab.show()
+#%%
+PDE3b = psi_tx_approx(delx2,delt1,xf=6.2832)[-1,:] #See Line 53
+trueplot, = pylab.plot(x2range,psi_trueb, 'b-', label='Exact')
+PDEplot3b, = pylab.plot(x2range,PDE3b, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot3b])
+pylab.xlabel('x')
+pylab.title('dx = 0.01*pi, dt = 0.0025')
+pylab.show()
+#%%
+PDE4b = psi_tx_approx(delx2,delt2,xf=6.2832)[-1,:] #See Line 53
+trueplot, = pylab.plot(x2range,psi_trueb, 'b-', label='Exact')
+PDEplot4b, = pylab.plot(x2range,PDE4b, 'rx', label='PDE Solver')
+pylab.legend(handles=[trueplot,PDEplot4b])
+pylab.xlabel('x')
+pylab.title('dx = 0.01*pi, dt = 0.0001')
+pylab.show()
+#%%
+psi_true1b = psi_x_exactb(x1range)
+psi_true2b = psi_x_exactb(x2range)
+error1b = pylab.plot(x1range,abs(PDE1b-psi_true1b))
+pylab.title('Error 1')
+#%%
+error2b = pylab.plot(x1range,abs(PDE2b-psi_true1b))
+pylab.title('Error 2')
+#%%
+error3b = pylab.plot(x2range,abs(PDE3b-psi_true2b))
+pylab.title('Error 3')
+#%%
+error4b = pylab.plot(x2range,abs(PDE4b-psi_true2b))
+pylab.title('Error 4')
+#%%
+#Problem #1c
+def psi_tx_heav_approx(delta_x,delta_t,xi=0,xf=2*math.pi,ti=0,tf=6):
+    psi0_vector = psi0_t(delta_t,ti,tf)
+    n_xpoints = int(1+(xf-xi)/delta_x)
+    n_tpoints = int(1+(tf-ti)/delta_t)
+    solutions = np.zeros((n_tpoints,n_xpoints))
+    solutions[1:,0] = psi0_vector[1:]
+    mid = int(n_xpoints/2)+1
+    for j in range(1,mid):
+        for i in range(1,n_tpoints):
+            solutions[i,j]=solutions[i-1,j]-(delta_t/delta_x)*(solutions[i-1,j]-solutions[i-1,j-1])
+    for j in range(mid,n_xpoints):
+        for i in range(1,n_tpoints):
+            solutions[i,j]=solutions[i-1,j]-(delta_t/delta_x)*(solutions[i-1,j]-solutions[i-1,j-1])-delta_t*solutions[i-1,j-1]
+    return solutions
+#%%
+PDE1c = psi_tx_heav_approx(delx2,delt1,xf=6.2832,tf=4)[-1,:]
+PDE2c = psi_tx_heav_approx(delx2,delt1,xf=6.2832,tf=5)[-1,:]   
+PDE3c = psi_tx_heav_approx(delx2,delt1,xf=6.2832,tf=6)[-1,:]
+PDE4c = psi_tx_heav_approx(delx2,delt1,xf=6.2832,tf=7)[-1,:]
+PDE5c = psi_tx_heav_approx(delx2,delt1,xf=6.2832,tf=8)[-1,:]
+PDE6c = psi_tx_heav_approx(delx2,delt1,xf=6.2832,tf=10)[-1,:]
+c1, = pylab.plot(x2range,PDE1c,label='t=4')
+c2, = pylab.plot(x2range,PDE2c,label='t=5')     
+c3, = pylab.plot(x2range,PDE3c,label='t=6')
+c4, = pylab.plot(x2range,PDE4c,label='t=7') 
+c5, = pylab.plot(x2range,PDE5c,label='t=8') 
+c6, = pylab.plot(x2range,PDE6c,'k-',label='t=10')      
+pylab.legend(handles=[c1,c2,c3,c4,c5,c6])
+pylab.xlabel('x')
+pylab.title('With Heaviside Potential')
+pylab.show()  
+#%%
+PDE7c = psi_tx_approx(delx2,delt1,xf=6.2832,tf=4)[-1,:]
+PDE8c = psi_tx_approx(delx2,delt1,xf=6.2832,tf=5)[-1,:]   
+PDE9c = psi_tx_approx(delx2,delt1,xf=6.2832,tf=6)[-1,:]
+PDE10c = psi_tx_approx(delx2,delt1,xf=6.2832,tf=7)[-1,:]
+PDE11c = psi_tx_approx(delx2,delt1,xf=6.2832,tf=8)[-1,:]
+PDE12c = psi_tx_approx(delx2,delt1,xf=6.2832,tf=10)[-1,:]
+c7, = pylab.plot(x2range,PDE7c,label='t=4')
+c8, = pylab.plot(x2range,PDE8c,label='t=5')     
+c9, = pylab.plot(x2range,PDE9c,label='t=6')
+c10, = pylab.plot(x2range,PDE10c,label='t=7') 
+c11, = pylab.plot(x2range,PDE11c,label='t=8') 
+c12, = pylab.plot(x2range,PDE12c,'k-',label='t=10')      
+pylab.legend(handles=[c7,c8,c9,c10,c11,c12])
+pylab.xlabel('x')
+pylab.title('Zero Potential')
+pylab.show()         
